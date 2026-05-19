@@ -22,12 +22,12 @@ data "archive_file" "ai_gate_zip" {
 
 resource "aws_iam_policy" "lambda_ai_gate_policy" {
   name        = "lambda-ai-gate-policy"
-  description = "Execution policy for task-tracker AI gate Lambda (logs + Bedrock, cost-aware)"
+  description = "Execution policy for task-tracker AI gate Lambda (Bedrock, cost-aware)"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # 1) CloudWatch Logs: basic Lambda logging
+      # Optional logs; you can keep or drop this if you already use AWSLambdaBasicExecutionRole
       {
         Effect = "Allow"
         Action = [
@@ -37,16 +37,19 @@ resource "aws_iam_policy" "lambda_ai_gate_policy" {
         ]
         Resource = "*"
       },
-
-      # 2) Amazon Bedrock: allow invoking ONLY the chosen small model in us-east-1
+      # Bedrock invoke permission
       {
         Effect = "Allow"
         Action = [
           "bedrock:InvokeModel"
         ]
-        Resource = [
-          "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
-        ]
+        # For now, easiest is to allow all models while testing:
+        Resource = "*"
+
+        # After it works, you can restrict:
+        # Resource = [
+        #   "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+        # ]
       }
     ]
   })

@@ -19,6 +19,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Needed so HEAD~1 exists for git diff
+          fetch-depth: 2
 
       - name: Set up Python (for tests)
         uses: actions/setup-python@v5
@@ -49,7 +52,21 @@ jobs:
       - name: Build AI gate input payload
         id: ai-input
         run: |
-          cat > ai_payload.json << 'EOF'
+          # Compute diff stats vs previous commit
+          FILES_CHANGED=$(git diff --name-only HEAD~1..HEAD | wc -l | xargs)
+          SHORTSTAT=$(git diff --shortstat HEAD~1..HEAD)
+
+          # Parse insertions and deletions from shortstat, if present
+          INSERTIONS=$(echo "$SHORTSTAT" | awk '{print $4}' | tr -d ',')
+          DELETIONS=$(echo "$SHORTSTAT" | awk '{print $6}' | tr -d ',')
+
+          # Fallbacks if there were no changes or fields are empty
+          INSERTIONS=${INSERTIONS:-0}
+          DELETIONS=${DELETIONS:-0}
+
+          echo "Diff stats: files=$FILES_CHANGED, insertions=$INSERTIONS, deletions=$DELETIONS"
+
+          cat > ai_payload.json << EOF
           {
             "commit_sha": "${GITHUB_SHA}",
             "branch": "${GITHUB_REF_NAME}",
@@ -59,9 +76,9 @@ jobs:
               "failed": 0
             },
             "diff": {
-              "files_changed": 1,
-              "insertions": 10,
-              "deletions": 2
+              "files_changed": ${FILES_CHANGED},
+              "insertions": ${INSERTIONS},
+              "deletions": ${DELETIONS}
             },
             "service": {
               "name": "task-tracker-api",

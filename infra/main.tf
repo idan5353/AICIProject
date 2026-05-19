@@ -266,12 +266,11 @@ resource "aws_iam_access_key" "ci" {
 
 resource "aws_iam_policy" "ci_ecr_ecs" {
   name        = "task-tracker-ci-ecr-ecs-policy"
-  description = "Allow GitHub Actions to push to ECR and force ECS service deployments"
+  description = "Allow GitHub Actions to push to ECR, force ECS deployments, and invoke AI gate Lambda"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # ECR push/pull
       {
         Effect   = "Allow"
         Action   = [
@@ -286,7 +285,6 @@ resource "aws_iam_policy" "ci_ecr_ecs" {
         ]
         Resource = "*"
       },
-      # ECS deploy
       {
         Effect   = "Allow"
         Action   = [
@@ -295,6 +293,15 @@ resource "aws_iam_policy" "ci_ecr_ecs" {
           "ecs:UpdateService"
         ]
         Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = [
+          "lambda:InvokeFunction"
+        ]
+        Resource = [
+          aws_lambda_function.ai_gate.arn
+        ]
       }
     ]
   })

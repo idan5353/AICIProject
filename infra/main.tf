@@ -266,7 +266,7 @@ resource "aws_iam_access_key" "ci" {
 
 resource "aws_iam_policy" "ci_ecr_ecs" {
   name        = "task-tracker-ci-ecr-ecs-policy"
-  description = "Allow GitHub Actions to push to ECR, deploy ECS, and invoke AI gate Lambda"
+  description = "Allow GitHub Actions to push to ECR, force ECS deployments, and invoke AI gate Lambda"
 
   policy = jsonencode({
     Version = "2012-10-17"

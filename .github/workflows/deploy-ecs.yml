@@ -6,15 +6,11 @@ on:
       - main
 
 env:
-  AWS_REGION: us-east-1
-  AWS_ACCOUNT_ID: "851725642392"
-  ECR_REPOSITORY: "task-tracker-api"
-  ECS_CLUSTER: "task-tracker-cluster"
-  ECS_SERVICE: "task-tracker-service"
-
-permissions:
-  id-token: write    # for OIDC
-  contents: read
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+  ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
 
 jobs:
   build-and-deploy:
@@ -70,9 +66,8 @@ jobs:
         run: |
           docker push ${{ steps.build-image.outputs.IMAGE_URI }}
 
-      - name: Update ECS service (force new deployment)
+      - name: Force new ECS deployment
         run: |
-          echo "Updating ECS service ${ECS_CLUSTER}/${ECS_SERVICE} with new image tag"
           aws ecs update-service \
             --cluster "${ECS_CLUSTER}" \
             --service "${ECS_SERVICE}" \

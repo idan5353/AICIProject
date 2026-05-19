@@ -20,6 +20,43 @@ data "archive_file" "ai_gate_zip" {
   output_path = "${path.module}/ai-gate-lambda.zip"
 }
 
+resource "aws_iam_policy" "lambda_ai_gate_policy" {
+  name        = "lambda-ai-gate-policy"
+  description = "Execution policy for task-tracker AI gate Lambda (logs + Bedrock, cost-aware)"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # 1) CloudWatch Logs: basic Lambda logging
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      },
+
+      # 2) Amazon Bedrock: allow invoking ONLY the chosen small model in us-east-1
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel"
+        ]
+        Resource = [
+          "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_ai_gate_attach" {
+  role       = aws_iam_role.ai_gate_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_ai_gate_policy.arn
+}
+
 resource "aws_iam_role" "ai_gate_lambda_role" {
   name = "task-tracker-ai-gate-lambda-role"
 

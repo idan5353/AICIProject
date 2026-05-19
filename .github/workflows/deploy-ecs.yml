@@ -45,6 +45,64 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # ---- AI gate (Lambda) ----
+      - name: Build AI gate input payload
+        id: ai-input
+        run: |
+          cat > ai_payload.json << 'EOF'
+          {
+            "commit_sha": "${GITHUB_SHA}",
+            "branch": "${GITHUB_REF_NAME}",
+            "tests": {
+              "status": "passed",
+              "total": 1,
+              "failed": 0
+            },
+            "diff": {
+              "files_changed": 1,
+              "insertions": 10,
+              "deletions": 2
+            },
+            "service": {
+              "name": "task-tracker-api",
+              "environment": "prod"
+            }
+          }
+          EOF
+
+      - name: Invoke AI gate Lambda
+        id: ai-gate
+        run: |
+          aws lambda invoke \
+            --function-name task-tracker-ai-gate \
+            --payload file://ai_payload.json \
+            --cli-binary-format raw-in-base64-out \
+            ai_response.json
+
+          echo "Lambda raw response:"
+          cat ai_response.json
+
+          # Take only the last JSON line from the file as the AI result
+          AI_RESULT=$(tail -n 1 ai_response.json)
+          echo "AI_RESULT=$AI_RESULT" >> $GITHUB_OUTPUT
+
+      - name: Check AI gate decision
+        id: ai-decision
+        run: |
+          echo "AI result: ${{ steps.ai-gate.outputs.AI_RESULT }}"
+          DECISION=$(echo '${{ steps.ai-gate.outputs.AI_RESULT }}' | jq -r '.decision')
+          echo "Decision from AI gate: $DECISION"
+
+          if [ "$DECISION" = "block" ]; then
+            echo "AI gate decided to BLOCK deployment."
+            exit 1
+          fi
+
+          if [ "$DECISION" = "warn" ]; then
+            echo "AI gate WARNED about this deploy. Continuing but you may want to notify."
+          fi
+
+      # ---- Build & deploy to ECS ----
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region ${AWS_REGION} \

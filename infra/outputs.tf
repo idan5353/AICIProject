@@ -29,3 +29,8 @@ output "ci_secret_access_key" {
   description = "Secret access key for CI user"
   sensitive   = true
 }
+
+output "ai_gate_lambda_arn" {
+  value       = aws_lambda_function.ai_gate.arn
+  description = "ARN of the AI gate Lambda function"
+}

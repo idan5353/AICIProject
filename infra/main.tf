@@ -13,6 +13,46 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Package Lambda code (zip) from ../lambda-ai-gate
+data "archive_file" "ai_gate_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../lambda-ai-gate"
+  output_path = "${path.module}/ai-gate-lambda.zip"
+}
+
+resource "aws_iam_role" "ai_gate_lambda_role" {
+  name = "task-tracker-ai-gate-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ai_gate_lambda_basic" {
+  role       = aws_iam_role.ai_gate_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_lambda_function" "ai_gate" {
+  function_name = "task-tracker-ai-gate"
+  role          = aws_iam_role.ai_gate_lambda_role.arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.12"
+
+  filename         = data.archive_file.ai_gate_zip.output_path
+  source_code_hash = data.archive_file.ai_gate_zip.output_base64sha256
+
+  timeout = 10
+  memory_size = 256
+}
+
 # Lookup default VPC (no NAT, low cost)
 data "aws_vpcs" "default" {
   filter {

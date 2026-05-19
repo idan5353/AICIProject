@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pytest_cache/
+*.egg-info/
+.dist/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local config / secrets (never commit)
+.env
+*.env
+
+# VS Code / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.*
+infra/crash.log
+infra/*.tfvars
+infra/*.tfvars.json
+
+# AWS CLI cache
+.aws-sam/

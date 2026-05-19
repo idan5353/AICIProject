@@ -1,0 +1,80 @@
+name: CI/CD to ECS Fargate
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "851725642392"
+  ECR_REPOSITORY: "task-tracker-api"
+  ECS_CLUSTER: "task-tracker-cluster"
+  ECS_SERVICE: "task-tracker-service"
+
+permissions:
+  id-token: write    # for OIDC
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python (for tests)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: api
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: api
+        run: |
+          source .venv/bin/activate
+          pytest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${AWS_REGION} \
+            | docker login \
+              --username AWS \
+              --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+      - name: Build Docker image
+        id: build-image
+        working-directory: api
+        run: |
+          SHORT_SHA=${GITHUB_SHA::8}
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${SHORT_SHA}
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+          docker build -t $IMAGE_URI .
+
+      - name: Push image to ECR
+        run: |
+          docker push ${{ steps.build-image.outputs.IMAGE_URI }}
+
+      - name: Update ECS service (force new deployment)
+        run: |
+          echo "Updating ECS service ${ECS_CLUSTER}/${ECS_SERVICE} with new image tag"
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_SERVICE}" \
+            --force-new-deployment \
+            --region "${AWS_REGION}"

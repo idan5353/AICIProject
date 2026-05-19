@@ -3,7 +3,12 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException
 
-from schemas import Task, TaskCreate, TaskUpdate
+try:
+    # When run as part of the api package (tests, local code)
+    from api.schemas import Task, TaskCreate, TaskUpdate
+except ImportError:
+    # When run as top-level in Docker container (/app/main.py, /app/schemas.py)
+    from schemas import Task, TaskCreate, TaskUpdate
 
 app = FastAPI()
 

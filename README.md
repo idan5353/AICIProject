@@ -1,5 +1,7 @@
 # AI-Gated CI/CD Pipeline to AWS ECS Fargate
 
+<img width="871" height="830" alt="diagram" src="https://github.com/user-attachments/assets/55071809-4a7e-4b95-b28a-9ad8b445b354" />
+
 This project is a production-style demo of a **FastAPI** service deployed on **AWS ECS Fargate**, with a **GitHub Actions CI/CD pipeline** that is protected by an **AI gate** running on **AWS Lambda + Amazon Bedrock**.
 
 On every push to `main`, the pipeline:

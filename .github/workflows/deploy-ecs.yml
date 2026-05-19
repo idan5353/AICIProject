@@ -82,15 +82,14 @@ jobs:
           echo "Lambda raw response:"
           cat ai_response.json
 
-          # Take only the last JSON line from the file as the AI result
-          AI_RESULT=$(tail -n 1 ai_response.json)
-          echo "AI_RESULT=$AI_RESULT" >> $GITHUB_OUTPUT
-
       - name: Check AI gate decision
         id: ai-decision
         run: |
-          echo "AI result: ${{ steps.ai-gate.outputs.AI_RESULT }}"
-          DECISION=$(echo '${{ steps.ai-gate.outputs.AI_RESULT }}' | jq -r '.decision')
+          # The last line of ai_response.json is the Lambda's JSON return
+          AI_RESULT=$(tail -n 1 ai_response.json)
+          echo "AI result: $AI_RESULT"
+
+          DECISION=$(echo "$AI_RESULT" | jq -r '.decision')
           echo "Decision from AI gate: $DECISION"
 
           if [ "$DECISION" = "block" ]; then

@@ -250,4 +250,3 @@ The `lambda-ai-gate/lambda_function.py` implements:
 
 ---
 
-If you share your intended audience (recruiters, blog readers, teammates), this README can be tuned further to emphasize the most relevant parts (e.g., DevOps skills, cloud architecture, or AI integration).
